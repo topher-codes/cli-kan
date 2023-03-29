@@ -39,7 +39,7 @@ func (t Task) Description() string {
 /* Main Model */
 
 type Model struct {
-    list    list.Model
+    lists    []list.Model
     err     error
 }
 
@@ -49,14 +49,29 @@ func New() *Model {
 
 
 // TODO: call this on tea.WindowSizeMsg
-func (m *Model) initList(width, height int) {
-    m.list = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height)
-    m.list.Title = "To Do"
-    m.list.SetItems([]list.Item{
+func (m *Model) initLists(width, height int) {
+    defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), width, height)
+    m.lists = []list.Model{defaultList, defaultList, defaultList}
+    //Init To Do
+    m.lists[todo].Title = "To Do"
+    m.lists[todo].SetItems([]list.Item{
         Task{status: todo, title: "buy milk", description: "Chocolate Milk"},
         Task{status: todo, title: "eat sushi", description: "negitoro roll, miso soup, rice"},
         Task{status: todo, title: "fold laundry", description: "or wear wrinkly t-shirts"},
-})
+    })
+    //Init in progress
+    m.lists[inProgress].Title = "In Progress"
+    m.lists[inProgress].SetItems([]list.Item{
+        Task{status: , title: "buy milk", description: "Chocolate Milk"},
+    })
+    //Init done
+    m.lists[todo].Title = "To Do"
+    m.lists[todo].SetItems([]list.Item{
+        Task{status: todo, title: "buy milk", description: "Chocolate Milk"},
+        Task{status: todo, title: "eat sushi", description: "negitoro roll, miso soup, rice"},
+        Task{status: todo, title: "fold laundry", description: "or wear wrinkly t-shirts"},
+    })
+
 }
 
 func (m Model) Init() tea.Cmd{
@@ -83,8 +98,10 @@ func main() {
     m := New()
     p := tea.NewProgram(m)
 
+    
     if err := p.Start(); err != nil {
         fmt.Println(err)
         os.Exit(1)
     }
+
 }
