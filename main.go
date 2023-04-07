@@ -58,7 +58,7 @@ func (t *JsonTask) GetDescription() string {
 }
 
 
-
+// Get the tasks from the json file
 func getTasksJson() []JsonTask {
     var tasks []JsonTask
 
@@ -77,10 +77,43 @@ func getTasksJson() []JsonTask {
     if err != nil {
         panic(err)
     }
-
-
     return tasks
+}
 
+// Append a task to the json file
+func appendTaskJson(task JsonTask) {
+    tasks := getTasksJson()
+    tasks = append(tasks, task)
+    data, err := json.Marshal(tasks)
+    if err != nil {
+        panic(err)
+    }
+    err = ioutil.WriteFile("tasks.json", data, 0644)
+    if err != nil {
+        panic(err)
+    }
+}
+
+//Remove a task from the json file
+func removeTaskJson(task JsonTask) {
+    tasks := getTasksJson()
+    for i, t := range tasks {
+        if t.Title == task.Title {
+            tasks = append(tasks[:i], tasks[i+1:]...)
+        }
+    }
+    data, err := json.Marshal(tasks)
+    if err != nil {
+        panic(err)
+    }
+    err = ioutil.WriteFile("tasks.json", data, 0644)
+    if err != nil {
+        panic(err)
+    }
+}
+
+func NewTaskJson(status status, title, description string) JsonTask {
+    return JsonTask{Status: status, Title: title, Description: description} 
 }
 
 
@@ -148,6 +181,7 @@ func (m *Model) DeleteTask() tea.Msg{
     selectedItem := m.lists[m.focused].SelectedItem()
     selectedTask := selectedItem.(Task)
     m.lists[selectedTask.status].RemoveItem(m.lists[m.focused].Index())
+    removeTaskJson(NewTaskJson(selectedTask.status, selectedTask.title, selectedTask.description))
     return nil
 
 }
@@ -317,6 +351,8 @@ func NewForm(focused status) *Form {
 
 func (m Form) CreateTask() tea.Msg {
     task := NewTask(m.focused, m.title.Value(), m.description.Value())
+    js := NewTaskJson(task.status, task.title, task.description)
+    appendTaskJson(js)
     return task
 
 }
