@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+    "encoding/json"
+    "io/ioutil"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -41,6 +43,48 @@ var (
      
 
 /* Custom Item */
+type JsonTask struct {
+    Status  status
+    Title   string
+    Description string
+}
+
+func (t *JsonTask) GetTitle() string {
+    return t.Title
+}
+
+func (t *JsonTask) GetDescription() string {
+    return t.Description
+}
+
+
+
+func getTasksJson() []JsonTask {
+    var tasks []JsonTask
+
+    file, err := os.Open("tasks.json")
+    if err != nil {
+        panic(err)
+    }
+    defer file.Close()
+
+    data, err := ioutil.ReadAll(file)
+    if err != nil {
+        panic(err)
+    }
+
+    err = json.Unmarshal(data, &tasks)
+    if err != nil {
+        panic(err)
+    }
+
+
+    return tasks
+
+}
+
+
+
 type Task struct {
     status  status
     title   string
@@ -131,6 +175,12 @@ func (m *Model) Prev() {
 
 
 func (m *Model) initLists(width, height int) {
+    js := getTasksJson()
+    var tasks []Task
+    for _, j := range js {
+        tasks = append(tasks, NewTask(j.Status, j.Title, j.Description))
+    }
+
     defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), width / divisor, height/2)
     defaultList.SetShowHelp(false)
     m.lists = []list.Model{defaultList, defaultList, defaultList}
@@ -140,6 +190,7 @@ func (m *Model) initLists(width, height int) {
         Task{status: todo, title: "buy milk", description: "Chocolate Milk"},
         Task{status: todo, title: "eat sushi", description: "negitoro roll, miso soup, rice"},
         Task{status: todo, title: "fold laundry", description: "or wear wrinkly t-shirts"},
+        Task{status: tasks[0].status, title: tasks[0].title, description: tasks[0].description},
     })
     //Init in progress
     m.lists[inProgress].Title = "In Progress"
