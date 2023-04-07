@@ -187,21 +187,33 @@ func (m *Model) initLists(width, height int) {
     //Init To Do
     m.lists[todo].Title = "To Do"
     m.lists[todo].SetItems([]list.Item{
-        Task{status: todo, title: "buy milk", description: "Chocolate Milk"},
-        Task{status: todo, title: "eat sushi", description: "negitoro roll, miso soup, rice"},
-        Task{status: todo, title: "fold laundry", description: "or wear wrinkly t-shirts"},
-        Task{status: tasks[0].status, title: tasks[0].title, description: tasks[0].description},
     })
+    for _, t := range tasks {
+        if t.status == todo {
+            m.lists[todo].InsertItem(len(m.lists[todo].Items())-1, list.Item(t))
+        }
+    }
     //Init in progress
     m.lists[inProgress].Title = "In Progress"
     m.lists[inProgress].SetItems([]list.Item{
         Task{status: inProgress, title: "write code", description: "don't worry, it's Go"},
+
     })
+    for _, t := range tasks {
+        if t.status == inProgress {
+            m.lists[inProgress].InsertItem(len(m.lists[inProgress].Items())-1, list.Item(t))
+        }
+    }
     //Init done
     m.lists[done].Title = "Done"
     m.lists[done].SetItems([]list.Item{
         Task{status: done, title: "stay cool", description: "as a cucumber"},
     })
+    for _, t := range tasks {
+        if t.status == done {
+            m.lists[done].InsertItem(len(m.lists[done].Items())-1, list.Item(t))
+        }
+    }
 
 }
 
