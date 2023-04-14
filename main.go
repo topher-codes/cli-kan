@@ -43,6 +43,7 @@ var (
      
 
 /* Custom Item */
+
 type JsonTask struct {
     Status  status
     Title   string
@@ -214,6 +215,7 @@ func (m *Model) initLists(width, height int) {
     for _, j := range js {
         tasks = append(tasks, NewTask(j.Status, j.Title, j.Description))
     }
+
 
     defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), width / divisor, height/2)
     defaultList.SetShowHelp(false)
