@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-    "encoding/json"
-    "io/ioutil"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+    //"github.com/go-sql-driver/mysql"
 )
 
 type status int
@@ -43,81 +42,6 @@ var (
      
 
 /* Custom Item */
-
-type JsonTask struct {
-    Status  status
-    Title   string
-    Description string
-}
-
-func (t *JsonTask) GetTitle() string {
-    return t.Title
-}
-
-func (t *JsonTask) GetDescription() string {
-    return t.Description
-}
-
-
-// Get the tasks from the json file
-func getTasksJson() []JsonTask {
-    var tasks []JsonTask
-
-    file, err := os.Open("tasks.json")
-    if err != nil {
-        panic(err)
-    }
-    defer file.Close()
-
-    data, err := ioutil.ReadAll(file)
-    if err != nil {
-        panic(err)
-    }
-
-    err = json.Unmarshal(data, &tasks)
-    if err != nil {
-        panic(err)
-    }
-    return tasks
-}
-
-// Append a task to the json file
-func appendTaskJson(task JsonTask) {
-    tasks := getTasksJson()
-    tasks = append(tasks, task)
-    data, err := json.Marshal(tasks)
-    if err != nil {
-        panic(err)
-    }
-    err = ioutil.WriteFile("tasks.json", data, 0644)
-    if err != nil {
-        panic(err)
-    }
-}
-
-//Remove a task from the json file
-func removeTaskJson(task JsonTask) {
-    tasks := getTasksJson()
-    for i, t := range tasks {
-        if t.Title == task.Title {
-            tasks = append(tasks[:i], tasks[i+1:]...)
-        }
-    }
-    data, err := json.Marshal(tasks)
-    if err != nil {
-        panic(err)
-    }
-    err = ioutil.WriteFile("tasks.json", data, 0644)
-    if err != nil {
-        panic(err)
-    }
-}
-
-func NewTaskJson(status status, title, description string) JsonTask {
-    return JsonTask{Status: status, Title: title, Description: description} 
-}
-
-
 
 type Task struct {
     status  status
@@ -182,7 +106,6 @@ func (m *Model) DeleteTask() tea.Msg{
     selectedItem := m.lists[m.focused].SelectedItem()
     selectedTask := selectedItem.(Task)
     m.lists[selectedTask.status].RemoveItem(m.lists[m.focused].Index())
-    removeTaskJson(NewTaskJson(selectedTask.status, selectedTask.title, selectedTask.description))
     return nil
 
 }
@@ -210,13 +133,6 @@ func (m *Model) Prev() {
 
 
 func (m *Model) initLists(width, height int) {
-    js := getTasksJson()
-    var tasks []Task
-    for _, j := range js {
-        tasks = append(tasks, NewTask(j.Status, j.Title, j.Description))
-    }
-
-
     defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), width / divisor, height/2)
     defaultList.SetShowHelp(false)
     m.lists = []list.Model{defaultList, defaultList, defaultList}
@@ -224,33 +140,17 @@ func (m *Model) initLists(width, height int) {
     m.lists[todo].Title = "To Do"
     m.lists[todo].SetItems([]list.Item{
     })
-    for _, t := range tasks {
-        if t.status == todo {
-            m.lists[todo].InsertItem(len(m.lists[todo].Items())-1, list.Item(t))
-        }
-    }
-    //Init in progress
+   //Init in progress
     m.lists[inProgress].Title = "In Progress"
     m.lists[inProgress].SetItems([]list.Item{
         Task{status: inProgress, title: "write code", description: "don't worry, it's Go"},
 
     })
-    for _, t := range tasks {
-        if t.status == inProgress {
-            m.lists[inProgress].InsertItem(len(m.lists[inProgress].Items())-1, list.Item(t))
-        }
-    }
-    //Init done
+   //Init done
     m.lists[done].Title = "Done"
     m.lists[done].SetItems([]list.Item{
         Task{status: done, title: "stay cool", description: "as a cucumber"},
     })
-    for _, t := range tasks {
-        if t.status == done {
-            m.lists[done].InsertItem(len(m.lists[done].Items())-1, list.Item(t))
-        }
-    }
-
 }
 
 func (m Model) Init() tea.Cmd{
@@ -353,8 +253,6 @@ func NewForm(focused status) *Form {
 
 func (m Form) CreateTask() tea.Msg {
     task := NewTask(m.focused, m.title.Value(), m.description.Value())
-    js := NewTaskJson(task.status, task.title, task.description)
-    appendTaskJson(js)
     return task
 
 }
