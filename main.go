@@ -100,6 +100,7 @@ func (m *Model) MoveToNext() tea.Msg {
     m.lists[selectedTask.status].RemoveItem(m.lists[m.focused].Index())
     selectedTask.Next()
     m.lists[selectedTask.status].InsertItem(len(m.lists[selectedTask.status].Items())-1, list.Item(selectedTask))
+    db.Exec("UPDATE tasks SET status = ? WHERE title = ?", selectedTask.status, selectedTask.title)
     return nil
 
 
@@ -111,6 +112,7 @@ func (m *Model) DeleteTask() tea.Msg{
     selectedItem := m.lists[m.focused].SelectedItem()
     selectedTask := selectedItem.(Task)
     m.lists[selectedTask.status].RemoveItem(m.lists[m.focused].Index())
+    db.Exec("DELETE FROM tasks WHERE title = ?", selectedTask.title)
     return nil
 
 }
@@ -289,6 +291,7 @@ func NewForm(focused status) *Form {
 
 func (m Form) CreateTask() tea.Msg {
     task := NewTask(m.focused, m.title.Value(), m.description.Value())
+    db.Exec("INSERT INTO tasks (status, title, description) VALUES (?, ?, ?)", task.status, task.title, task.description)
     return task
 
 }
