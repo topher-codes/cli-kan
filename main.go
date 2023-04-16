@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -9,8 +11,11 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-    //"github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
+
+var db *sql.DB
+
 
 type status int
 
@@ -130,9 +135,30 @@ func (m *Model) Prev() {
     }
 }
 
-
+func getTasksFromDatabase() []Task {
+    var tasks []Task
+    rows, err := db.Query("SELECT * FROM tasks")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var task Task
+        err := rows.Scan(&task.status, &task.title, &task.description)
+        if err != nil {
+            log.Fatal(err)
+        }
+        tasks = append(tasks, task)
+    }
+    err = rows.Err()
+    if err != nil {
+        log.Fatal(err)
+    }
+    return tasks
+}
 
 func (m *Model) initLists(width, height int) {
+    tasks := getTasksFromDatabase()
     defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), width / divisor, height/2)
     defaultList.SetShowHelp(false)
     m.lists = []list.Model{defaultList, defaultList, defaultList}
@@ -151,6 +177,16 @@ func (m *Model) initLists(width, height int) {
     m.lists[done].SetItems([]list.Item{
         Task{status: done, title: "stay cool", description: "as a cucumber"},
     })
+
+    for _, task := range tasks {
+        if task.status == todo {
+            m.lists[todo].InsertItem(len(m.lists[todo].Items())-1, list.Item(task))
+        } else if task.status == inProgress {
+            m.lists[inProgress].InsertItem(len(m.lists[inProgress].Items())-1, list.Item(task))
+        } else if task.status == done {
+            m.lists[done].InsertItem(len(m.lists[done].Items())-1, list.Item(task))
+        }
+    }
 }
 
 func (m Model) Init() tea.Cmd{
@@ -295,6 +331,28 @@ func (m Form) View() string {
 }
 
 func main() {
+        // Capture connection properties.
+    cfg := mysql.Config{
+        User:   os.Getenv("DBUSER"),
+        Passwd: os.Getenv("DBPASS"),
+        Net:    "tcp",
+        Addr:   "127.0.0.1:3306",
+        DBName: "tasks",
+    }
+    // Get a database handle.
+    var err error
+    db, err = sql.Open("mysql", cfg.FormatDSN())
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    pingErr := db.Ping()
+    if pingErr != nil {
+        log.Fatal(pingErr)
+    }
+    fmt.Println("Connected!")
+
+
     models = []tea.Model{New(), NewForm(todo)}
     m := models[model]
     p := tea.NewProgram(m)
